@@ -16,12 +16,16 @@ if Path("stormworks_grouping_tool.ico").exists():
 
 SAVE_PATH = ""
 SHOP_PATH = ""
-dir,savexml,vlist,vimages,vlistcheck,vlistselectall,vlistgroup,glist = None,None,[],[],[],None,{},[]
+# dir,savexml,vlistselectall = 
+vlist,vimages,vlistcheck,vlistgroup,glist = [],[],[],{},[]
 selectedGroup = tk.StringVar(value="Default")
 filteredgroup = None
 vehicleZone, groupZone = None,None
 
+editorRunning = False
 
+# actionbarinfo,
+actionbarinfoschedule=None
 
 # ---------- Functions ----------
 
@@ -36,10 +40,10 @@ def sequence(methods):
 def runwith(method,param):
 	return lambda: method(param)
 
-def createScrollable(master,width,height,color=None):
-	container = tk.Frame(master,width=width,height=height,bg=color)
+def createScrollable(master,width,height):
+	container = tk.Frame(master,width=width,height=height)
 
-	canvas = tk.Canvas(container,bg=color,width=width,height=height)
+	canvas = tk.Canvas(container,width=width,height=height)
 
 	canvas.bind("<Enter>", lambda e: canvas.bind_all("<MouseWheel>", lambda event:canvas.yview_scroll(int(-event.delta / 120), "units")))
 	canvas.bind("<Leave>", lambda e: canvas.unbind_all("<MouseWheel>"))
@@ -48,7 +52,7 @@ def createScrollable(master,width,height,color=None):
 	scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
 	scrollbar.pack(side="right", fill="y")
 
-	scrollable_frame = tk.Frame(canvas,bg=color)
+	scrollable_frame = tk.Frame(canvas)
 	scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
 
 	canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
@@ -81,6 +85,13 @@ def defilterButtonBehavior():
 	displayVehicles(vehicleZone)
 
 def writeGroupingToSaveFiles():
+	global actionbarinfoschedule, savexml
+	# if savexml is None:
+	# 	print("savexml is none somehow!")
+	# 	return;
+	# if actionbarinfo is None:
+	# 	print("actionbarinfo is none somehow!")
+	# 	return;
 	groupingData = ""
 	for g in glist:
 		groupingData+=f"\t\t\t<g name=\"{g}\">\n\t\t\t\t<filenames>\n"
@@ -94,6 +105,9 @@ def writeGroupingToSaveFiles():
 		groupingData+="\t\t\t\t</filenames>\n\t\t\t</g>\n"
 	text = savexml.read_text()
 	savexml.write_text(text[:(text.index("<vehicle_groups>")+17)]+groupingData+text[(text.index("</vehicle_groups>")-2):])
+	actionbarinfo.configure(text="Saved!")
+	if actionbarinfoschedule!=None: actionbarinfo.after_cancel(actionbarinfoschedule)
+	actionbarinfoschedule = actionbarinfo.after(1000,lambda: actionbarinfo.configure(text=""))
 
 def commandSelectAll():
 	for i in range(len(vlist)): vlistcheck[i].set(vlistselectall.get() and testWithFilter(i))
@@ -311,9 +325,9 @@ def loadData():
 
 def formEditor():
 	resetRoot()
-	global vehicleZone,groupZone
+	global vehicleZone,groupZone,actionbarinfo
 	
-	actionbar = tk.Frame(root,width=700,height=30,bg="gray")
+	actionbar = tk.Frame(root,width=700,height=30)
 	actionbar.grid(row=0,column=0,columnspan=2,sticky="nw")
 
 	tk.Checkbutton(actionbar,text="All",variable=vlistselectall,command=commandSelectAll).pack(side="left")
@@ -323,6 +337,8 @@ def formEditor():
 	tk.Button(actionbar,text="Refresh" ,command=formEditor).pack(side="left")
 	tk.Button(actionbar,text="Read"    ,command=lambda: formEditor() if loadData()[0] else 0).pack(side="left")
 	tk.Button(actionbar,text="Write"   ,command=writeGroupingToSaveFiles).pack(side="left")
+	actionbarinfo = tk.Label(actionbar,text="",borderwidth=0)
+	actionbarinfo.pack(side="left")
 
 	vContain,vehicleZone,_,_ = createScrollable(root,500,root.winfo_height()-30)
 	vContain.grid(row=1,column=0,sticky="nw")
@@ -337,7 +353,7 @@ def formEditor():
 
 
 def selectorExit(param):
-	global SAVE_PATH,SHOP_PATH;
+	global SAVE_PATH,SHOP_PATH,editorRunning;
 	
 	if param[0]:
 		SAVE_PATH=f"C:\\Users\\{param[0]}\\AppData\\Roaming\\Stormworks";
@@ -347,7 +363,7 @@ def selectorExit(param):
 	SHOP_PATH = param[1].get()
 
 	l=loadData();print(l);
-	if l[0]:formEditor() 
+	if l[0]:formEditor();editorRunning=True
 	else:tk.Label(root, text=l[1]).pack(pady=(10, 0))
 		
 def formSelector():
@@ -370,11 +386,46 @@ def formSelector():
 
 
 
+# 1: shift
+# 2: capslock
+# 4: ctrl
+# 8: numlock
+
+def handleKeyboard(event):
+	if not editorRunning: return
+	code = event.keycode
+	if event.state & 5 == 0: # Ctrl + __
+		if code==38: 												# ^ Select Group Above
+			try: i=glist.index(selectedGroup.get())
+			except: i=-1
+			if i== 0:selectedGroup.set("Default")
+			elif i==-1:selectedGroup.set(glist[len(glist)-1])
+			else:selectedGroup.set(glist[i-1])
+		if code==40: 												# v Select Group Below
+			try: i=glist.index(selectedGroup.get())
+			except: i=-1
+			if i==len(glist)-1:selectedGroup.set("Default")
+			elif i==-1:selectedGroup.set(glist[0])
+			else:selectedGroup.set(glist[i+1])
+	elif event.state & 5 == 4: # Ctrl + __
+		if code==38: groupBumpUp  (selectedGroup.get())				# ^ Bump Group Up
+		if code==40: groupBumpDown(selectedGroup.get())				# v Bump Group Down
+		if code==81: assignButtonBehavior()							# Q Assign
+		if code==65: vlistselectall.set(True);commandSelectAll()	# A SelAll
+		if code==83: writeGroupingToSaveFiles() 					# S Save
+		if code==82: formEditor() 									# R Refresh
+		if code==70: pass											# F --Reserved
+		if code==71: filterButtonBehavior()							# G Filter
+	elif event.state & 5 == 5: # Ctrl + Shift + __
+		if code==65: vlistselectall.set(False);commandSelectAll()	# A DisSelAll
+		if code==82 and loadData(): formEditor()					# R Read
+		if code==71: defilterButtonBehavior()						# G Defilter
+
 # ---------- Startup ----------
 
-
-
 root.update()
+
+root.bind_all("<Key>",func=handleKeyboard)
 
 formSelector()
 
