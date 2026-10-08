@@ -9,7 +9,6 @@ This tool is here to help manage vehicle groups (the new-ish method for keeping 
  - rename and reorder groups
  - rename vehicles
  - assign vehicles to groups in bulk
- - 100% local - no network usage
  - decent gui
 
 ## Features in-progress
