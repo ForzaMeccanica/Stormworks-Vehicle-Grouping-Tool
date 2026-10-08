@@ -17,20 +17,17 @@ if Path("stormworks_grouping_tool.ico").exists():
 
 SAVE_PATH = ""
 SHOP_PATH = ""
-# dir,savexml,vlistselectall = 
 vlist,vimages,vlistcheck,vlistgroup,glist = [],[],[],{},[]
 selectedGroup = tk.StringVar(value="Default")
 filteredgroup = None
 vehicleZone, groupZone = None,None
 
 editorRunning = False
+popupOpen = False
 
-# actionbarinfo,
 actionbarinfoschedule=None
 
 # ---------- Functions ----------
-
-
 
 def sequence(methods):
 	def doAllOf(m): 
@@ -40,6 +37,13 @@ def sequence(methods):
 
 def runwith(method,param):
 	return lambda: method(param)
+
+def commandRunIfMainGUI(method): 
+	if(editorRunning and not popupOpen):
+		method()
+
+def buildHotkey(method):
+	return lambda ignore: commandRunIfMainGUI(method)
 
 def createScrollable(master,width,height):
 	container = tk.Frame(master,width=width,height=height)
@@ -111,6 +115,8 @@ def saveToSavexml():
 
 	doc.write(Path(SAVE_PATH+"/save.xml"), encoding="UTF-8", xml_declaration=True)
 
+	return (True, "Saved!")
+
 def writeButtonBehavior():
 	dia = saveToSavexml()
 	actionbarinfo.configure(text=dia[1])
@@ -174,7 +180,11 @@ def groupBumpDown(name):
 	displayGroups(groupZone)
 
 def groupRename(name):
+	global popupOpen
+	popupOpen=True
 	popup = tk.Toplevel(root)
+	popup.grab_set()
+	popup.transient(root)
 	popup.title(f"Rename \"{name}\"")
 	popup.geometry("350x80")
 	renametextvar = tk.StringVar(value=str(name))
@@ -183,6 +193,8 @@ def groupRename(name):
 	tk.Button(popup,text="Rename",command=runwith(finishRenamingGroup,(name,renametextvar,popup,error))).pack(side="right")
 	tk.Entry(popup,textvariable=renametextvar).pack(side="left",expand=True,fill="x")
 	error.pack(side="bottom",expand=True,fill="x")
+	popup.wait_window()
+	popupOpen=False
 
 def finishRenamingGroup(info):
 	old,new,popup,error = info[0],info[1].get(),info[2],info[3]
@@ -251,8 +263,12 @@ def displayGroups(zone):
 		tk.Button(zone,text=" 🗑 ",	command=runwith(groupDelete,i)).grid(row=row,column=5,sticky="e")
 
 def renameVehicle(i):
+	global popupOpen
+	popupOpen=True
 	name = vlist[i].name[:-4]
 	popup = tk.Toplevel(root)
+	popup.grab_set()
+	popup.transient(root)
 	popup.title(f"Rename \"{name}\"")
 	popup.geometry("350x80")
 	renametextvar = tk.StringVar(value=str(name))
@@ -261,6 +277,8 @@ def renameVehicle(i):
 	tk.Button(popup,text="Rename",command=runwith(finishRenamingVehicle,(name,renametextvar,popup,error,i))).pack(side="right")
 	tk.Entry(popup,textvariable=renametextvar).pack(side="left",expand=True,fill="x")
 	error.pack(side="bottom",expand=True,fill="x")
+	popup.wait_window()
+	popupOpen=False
 
 def finishRenamingVehicle(info):
 	old,new,popup,error,i = info[0],info[1].get(),info[2],info[3],info[4]
@@ -319,6 +337,7 @@ def loadData():
 	if not xm: return(False,"\"save.xml\" has no tag \"editor_preferences\" (that's pretty wierd)")
 	xm = xm.find("vehicle_groups")
 	if not xm: return(False,"\"save.xml\" has no tag \"vehicle_groups\" within \"editor_preferences\" (normal if no groups exist)")
+	glist = []
 	try:
 		for group in xm.findall("g"):
 			glist.append(group.get("name",f"Err Group {len(glist)}"))
@@ -404,9 +423,11 @@ def formSelector():
 # 8: numlock
 
 def handleKeyboard(event):
-	if not editorRunning: return
+	global popupOpen, editorRunning
+	if popupOpen or not editorRunning: return
 	code = event.keycode
-	if event.state & 5 == 0: # Ctrl + __
+	print(f"kev: code={code}, state={event.state}")
+	if event.state & 5 == 0: # __
 		if code==38: 												# ^ Select Group Above
 			try: i=glist.index(selectedGroup.get())
 			except: i=-1
@@ -427,17 +448,23 @@ def handleKeyboard(event):
 		if code==83: writeButtonBehavior() 							# S Save
 		if code==82: formEditor() 									# R Refresh
 		if code==70: pass											# F --Reserved
-		if code==71: filterButtonBehavior()							# G Filter
 	elif event.state & 5 == 5: # Ctrl + Shift + __
 		if code==65: vlistselectall.set(False);commandSelectAll()	# A DisSelAll
 		if code==82 and loadData(): formEditor()					# R Read
-		if code==71: defilterButtonBehavior()						# G Defilter
 
+def tempfunction(event):
+	print(event)
 # ---------- Startup ----------
 
 root.update()
 
-root.bind_all("<Key>",func=handleKeyboard)
+root.bind_all("<Key>",	 func=handleKeyboard)
+
+root.bind_all("<Alt-f>", func=buildHotkey(filterButtonBehavior))
+root.bind_all("<Alt-d>", func=buildHotkey(defilterButtonBehavior))
+root.bind_all("<Alt-a>", func=buildHotkey(assignButtonBehavior))
+
+# root.bind_all("<KeyPress>",func=print)
 
 formSelector()
 

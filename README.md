@@ -45,9 +45,9 @@ This tool is here to help manage vehicle groups (the new-ish method for keeping 
  - Click the "All" checkbox in the actionbar or use Ctrl + A and Ctrl + Shift + A to Select/Disselect all visible vehicles.
 
 ### Action Bar
- - Select a group and press "Assign" (Ctrl + Q) in the action bar to assign any selected vehicles to that group.
- - Select a group and press "Filter" (Ctrl + G) to only view members of that group.
- - press "Defilter" (Ctrl + Shift + G) to view all.
+ - Select a group and press "Assign" (Alt + A) in the action bar to assign any selected vehicles to that group.
+ - Select a group and press "Filter" (Alt + F) to only view members of that group.
+ - press "Defilter" (Alt + D) to view all.
  - press "Refresh" (Ctrl + R) to refresh the editor. This will cause it to resize but will not have any other significant effects.
- - press "Read" (Ctrl + Shift+ R) to pull data from the files. Do this if you have changed the files since you opened this tool
+ - press "Read" (Ctrl + Shift + R) to pull data from the files. Do this if you have changed the files since you opened this tool
  - press "Write" (Ctrl + S) to publish the new group data. You need to press this button before closing to save group changes
