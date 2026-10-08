@@ -1,6 +1,6 @@
 # Hello Stormworkers!
 
-Version: 1.0.1
+Version: 1.1
 
 This tool is here to help manage vehicle groups (the new-ish method for keeping your Stormworks vehicles organized).
 
@@ -9,11 +9,14 @@ This tool is here to help manage vehicle groups (the new-ish method for keeping 
  - rename and reorder groups
  - rename vehicles
  - assign vehicles to groups in bulk
+ - decent gui
 
 ## Features in-progress
  - Workshop vehicles are visible and can be assigned to groups, but are listed under their workshop ID
    This is because I couldn't figure out where Steam stores the vehicle names. 
    If you figure out where these are stored, please let me know in the official stormworks discord (@ForzaMeccanica)
+    - update: I am 100% confident they are stored locally (as I can load them in-game in a 100% offline boot), 
+      but I am pulling my hair out trying to find it. If you find it, PLEASE TELL ME!
 
  - I intend to add a Ctrl + F feature and preview images
 
@@ -24,7 +27,7 @@ This tool is here to help manage vehicle groups (the new-ish method for keeping 
 ### Startup
  - You do need to have put something in a vehicle group before starting the tool so that the parser has a target to look for. 
  - Simply run "grouping_tool.py"
- - Under normal conditions, you **do not** change the text at the bottom and click the button near the top of the window associated with the user who's vehicles you would like to organize.
+ - Under normal conditions, you **do not** change the text at the bottom, just click the button near the top of the window associated with the user who's vehicles you would like to organize.
  - Select your user
 
 ### Groups
