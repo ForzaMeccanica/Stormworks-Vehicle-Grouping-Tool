@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import filedialog
 from pathlib import Path
 from PIL import Image, ImageTk
+import xml.etree.ElementTree as ETree
 
 
 
@@ -84,30 +85,38 @@ def defilterButtonBehavior():
 	filteredgroup = None
 	displayVehicles(vehicleZone)
 
-def writeGroupingToSaveFiles():
+def saveToSavexml():
 	global actionbarinfoschedule, savexml
-	# if savexml is None:
-	# 	print("savexml is none somehow!")
-	# 	return;
-	# if actionbarinfo is None:
-	# 	print("actionbarinfo is none somehow!")
-	# 	return;
-	groupingData = ""
+	if not savexml: return (False, "Cannot locate save.xml");
+	
+	doc = ETree.parse(Path(SAVE_PATH+"/save.xml"))
+	if doc is None: return (False, "Failed to parse save.xml")
+	
+	pref=doc.getroot().find("editor_preferences")
+	if pref is None: pref=ETree.SubElement(doc.getroot(),"editor_preferences")
+
+	groups=pref.find("vehicle_groups")
+	if groups is None: groups=ETree.SubElement(pref,"vehicle_groups")
+
+	groups.clear()
+	
 	for g in glist:
-		groupingData+=f"\t\t\t<g name=\"{g}\">\n\t\t\t\t<filenames>\n"
+		ghead = ETree.SubElement(groups, "g")
+		ghead.set("name",g)
+		gfile = ETree.SubElement(ghead, "filenames")
 		for i in range(len(vlist)):
 			if vlistgroup.get(i,None)==g:
-				if vlist[i].is_file():
-					groupingData+=f"\t\t\t\t\t<f value=\"{vlist[i].name[:-4]}\"/>\n"
-				else:
-					groupingData+=f"\t\t\t\t\t<f value=\"{vlist[i].name}\"/>\n"
+				file = ETree.SubElement(gfile, "f")
+				file.set("value", (vlist[i].name[:-4]) if (vlist[i].is_file()) else (vlist[i].name))
 
-		groupingData+="\t\t\t\t</filenames>\n\t\t\t</g>\n"
-	text = savexml.read_text()
-	savexml.write_text(text[:(text.index("<vehicle_groups>")+17)]+groupingData+text[(text.index("</vehicle_groups>")-2):])
-	actionbarinfo.configure(text="Saved!")
+	doc.write(Path(SAVE_PATH+"/save.xml"), encoding="UTF-8", xml_declaration=True)
+
+def writeButtonBehavior():
+	dia = saveToSavexml()
+	actionbarinfo.configure(text=dia[1])
 	if actionbarinfoschedule!=None: actionbarinfo.after_cancel(actionbarinfoschedule)
 	actionbarinfoschedule = actionbarinfo.after(1000,lambda: actionbarinfo.configure(text=""))
+	if not dia[0]: print(dia[1])
 
 def commandSelectAll():
 	for i in range(len(vlist)): vlistcheck[i].set(vlistselectall.get() and testWithFilter(i))
@@ -305,20 +314,23 @@ def loadData():
 
 	savexml = Path(SAVE_PATH+"/save.xml")
 	if not savexml.exists(): return (False,f"Could not find save.xml")
-	txt = savexml.read_text()
-	txt = txt[txt.index("<vehicle_groups>")+16:txt.index("</vehicle_groups>")].replace("\t","").splitlines()
-	vlistgroup={}
-	glist=[]
-	for line in txt:
-		if line[:9]=="<g name=\"":
-			glist.append(line[9:-2])
-		if line[:10]=="<f value=\"":
-			filename = line[10:-3]
-			for i in range(len(vlist)):
-				if vlist[i].name==filename or vlist[i].name==filename+".xml":
-					vlistgroup[i]=glist[len(glist)-1]
-
-
+	xm = ETree.parse(source=savexml)
+	xm = xm.find("editor_preferences")
+	if not xm: return(False,"\"save.xml\" has no tag \"editor_preferences\" (that's pretty wierd)")
+	xm = xm.find("vehicle_groups")
+	if not xm: return(False,"\"save.xml\" has no tag \"vehicle_groups\" within \"editor_preferences\" (normal if no groups exist)")
+	try:
+		for group in xm.findall("g"):
+			glist.append(group.get("name",f"Err Group {len(glist)}"))
+			for vehicle in group.find("filenames").findall("f"):
+				filename = vehicle.get("value")
+				for i in range(len(vlist)):
+					if vlist[i].name==filename or vlist[i].name==filename+".xml":
+						vlistgroup[i]=glist[len(glist)-1]
+	except(e):
+		print(e)
+		return (False, "Experienced the above error while parsing")
+	
 	return (True, "Loaded data without exception")
 
 
@@ -336,7 +348,7 @@ def formEditor():
 	tk.Button(actionbar,text="Defilter",command=defilterButtonBehavior).pack(side="left")
 	tk.Button(actionbar,text="Refresh" ,command=formEditor).pack(side="left")
 	tk.Button(actionbar,text="Read"    ,command=lambda: formEditor() if loadData()[0] else 0).pack(side="left")
-	tk.Button(actionbar,text="Write"   ,command=writeGroupingToSaveFiles).pack(side="left")
+	tk.Button(actionbar,text="Write"   ,command=   writeButtonBehavior).pack(side="left")
 	actionbarinfo = tk.Label(actionbar,text="",borderwidth=0)
 	actionbarinfo.pack(side="left")
 
@@ -412,7 +424,7 @@ def handleKeyboard(event):
 		if code==40: groupBumpDown(selectedGroup.get())				# v Bump Group Down
 		if code==81: assignButtonBehavior()							# Q Assign
 		if code==65: vlistselectall.set(True);commandSelectAll()	# A SelAll
-		if code==83: writeGroupingToSaveFiles() 					# S Save
+		if code==83: writeButtonBehavior() 							# S Save
 		if code==82: formEditor() 									# R Refresh
 		if code==70: pass											# F --Reserved
 		if code==71: filterButtonBehavior()							# G Filter
