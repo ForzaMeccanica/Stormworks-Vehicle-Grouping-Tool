@@ -32,7 +32,6 @@ actionbarinfoschedule=None
 def sequence(methods):
 	def doAllOf(m): 
 		for i in m: i()
-	
 	return lambda:doAllOf(methods)
 
 def runwith(method,param):
@@ -52,7 +51,6 @@ def createScrollable(master,width,height):
 
 	canvas.bind("<Enter>", lambda e: canvas.bind_all("<MouseWheel>", lambda event:canvas.yview_scroll(int(-event.delta / 120), "units")))
 	canvas.bind("<Leave>", lambda e: canvas.unbind_all("<MouseWheel>"))
-
 
 	scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
 	scrollbar.pack(side="right", fill="y")
@@ -129,7 +127,6 @@ def commandSelectAll():
 
 def testWithFilter(i):
 	if filteredgroup!=None and filteredgroup!=vlistgroup.get(i,"Default"): return False
-
 	return True
 
 def displayVehicles(zone):
@@ -141,7 +138,6 @@ def displayVehicles(zone):
 			tk.Button(zone,text=" 🖉 ",command=runwith(renameVehicle,i)).grid(row=i, column=2, sticky="w")
 		else:
 			tk.Checkbutton(zone, text=vlist[i].name, variable=vlistcheck[i]).grid(row=i, column=1, sticky="w")
-
 		if vlistgroup.get(i,None) != None:
 			tk.Label(zone,text=vlistgroup.get(i," ")).grid(row=i,column=3, sticky="w")
 
@@ -300,20 +296,17 @@ def finishRenamingVehicle(info):
 	p = Path(f"{SAVE_PATH}/data/vehicles/{old}")
 	if p.exists(): p.rename(f"{SAVE_PATH}/data/vehicles/{new}")
 
-
 	popup.destroy()
 	displayVehicles(vehicleZone)
 
 def loadData():
 	global dir,savexml,vlist,vlistcheck,vlistselectall,vlistgroup,glist
 
-
 	try:
 		dir = Path(SAVE_PATH)
 	except Exception as e:
 		return (False,f"Error while accessing location", e)
 	if not dir.is_dir(): return (False,f"Expected a file folder but did not recieve\n(exists: {dir.exists()}; is_file: {dir.is_file()})")
-
 
 	vlist = []
 	for i in sorted(Path(SAVE_PATH+"/data/vehicles").iterdir()):
@@ -323,12 +316,10 @@ def loadData():
 		if i.is_dir():
 			vlist.append(i)
 
-
 	vlistcheck = []
 	if len(vlist)==0: return (False,f"Found no vehicle save files")
 	for _ in vlist: vlistcheck.append(tk.BooleanVar())
 	vlistselectall = tk.BooleanVar()
-
 
 	savexml = Path(SAVE_PATH+"/save.xml")
 	if not savexml.exists(): return (False,f"Could not find save.xml")
@@ -374,8 +365,6 @@ def formEditor():
 	vContain,vehicleZone,_,_ = createScrollable(root,500,root.winfo_height()-30)
 	vContain.grid(row=1,column=0,sticky="nw")
 	displayVehicles(vehicleZone)
-	
-	
 	
 	gContain,groupZone,_,_ = createScrollable(root,root.winfo_width()-550,root.winfo_height()-30)
 	gContain.grid(row=1,column=1,sticky="nw")
@@ -463,8 +452,6 @@ root.bind_all("<Key>",	 func=handleKeyboard)
 root.bind_all("<Alt-f>", func=buildHotkey(filterButtonBehavior))
 root.bind_all("<Alt-d>", func=buildHotkey(defilterButtonBehavior))
 root.bind_all("<Alt-a>", func=buildHotkey(assignButtonBehavior))
-
-# root.bind_all("<KeyPress>",func=print)
 
 formSelector()
 
