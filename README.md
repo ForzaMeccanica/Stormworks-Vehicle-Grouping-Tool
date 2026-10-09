@@ -26,6 +26,7 @@ This tool is here to help manage vehicle groups (the new-ish method for keeping 
 ## How To
 
 ### Startup
+ - You cannot save your groups effectively while Stormworks is running.
  - You do need to have put something in a vehicle group before starting the tool so that the parser has a target to look for. 
  - Simply run "grouping_tool.py"
  - Under normal conditions, you **do not** change the text at the bottom, just click the button near the top of the window associated with the user who's vehicles you would like to organize.

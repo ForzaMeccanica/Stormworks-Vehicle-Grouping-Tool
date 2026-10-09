@@ -116,6 +116,7 @@ def saveToSavexml():
 	return (True, "Saved!")
 
 def writeButtonBehavior():
+	global actionbarinfoschedule
 	dia = saveToSavexml()
 	actionbarinfo.configure(text=dia[1])
 	if actionbarinfoschedule!=None: actionbarinfo.after_cancel(actionbarinfoschedule)
@@ -325,19 +326,22 @@ def loadData():
 	if not savexml.exists(): return (False,f"Could not find save.xml")
 	xm = ETree.parse(source=savexml)
 	xm = xm.find("editor_preferences")
-	if not xm: return(False,"\"save.xml\" has no tag \"editor_preferences\" (that's pretty wierd)")
+	if xm is None: return(False,"\"save.xml\" has no tag \"editor_preferences\" (that's pretty wierd)")
 	xm = xm.find("vehicle_groups")
-	if not xm: return(False,"\"save.xml\" has no tag \"vehicle_groups\" within \"editor_preferences\" (normal if no groups exist)")
+	if xm is None: return(False,"\"save.xml\" has no tag \"vehicle_groups\" within \"editor_preferences\" (normal if no groups exist)")
 	glist = []
 	try:
 		for group in xm.findall("g"):
 			glist.append(group.get("name",f"Err Group {len(glist)}"))
-			for vehicle in group.find("filenames").findall("f"):
+			finams = group.find("filenames")
+			if finams==None: continue
+			for vehicle in finams.findall("f"):
 				filename = vehicle.get("value")
+				if filename==None: continue
 				for i in range(len(vlist)):
 					if vlist[i].name==filename or vlist[i].name==filename+".xml":
 						vlistgroup[i]=glist[len(glist)-1]
-	except(e):
+	except Exception as e:
 		print(e)
 		return (False, "Experienced the above error while parsing")
 	
@@ -382,7 +386,7 @@ def selectorExit(param):
 	
 	SHOP_PATH = param[1].get()
 
-	l=loadData();print(l);
+	l=loadData();print(l[1]);
 	if l[0]:formEditor();editorRunning=True
 	else:tk.Label(root, text=l[1]).pack(pady=(10, 0))
 		
